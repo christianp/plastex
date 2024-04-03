@@ -21,4 +21,6 @@ At the moment, this branch includes:
 * rightline
   (PR: https://github.com/plastex/plastex/pull/371)
 * new-verbatim-environment
-  (PR: https://github.com/chirun-ncl/chirun/issues/230)
+  (PR: https://github.com/plastex/plastex/pull/372)
+* imager-beamer-bg
+  (PR: https://github.com/plastex/plastex/pull/373)
