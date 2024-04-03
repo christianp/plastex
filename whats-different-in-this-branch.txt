@@ -32,3 +32,5 @@ At the moment, this branch includes:
   (PR: https://github.com/plastex/plastex/pull/376)
 * cancel
   (PR: https://github.com/plastex/plastex/pull/377)
+* dsfont
+  (PR: https://github.com/plastex/plastex/pull/379)
