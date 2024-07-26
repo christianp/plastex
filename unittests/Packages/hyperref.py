@@ -42,6 +42,10 @@ A link to:
 
 \hyperref[not-numbered]{not numbered section}
 
+\ifplastex
+\hyperref[only-html]{HTML-only section}
+\fi
+
 \section{Numbered}\label{numbered}
 
 This section is numbered.
@@ -49,6 +53,12 @@ This section is numbered.
 \section*{Not numbered}\label{not-numbered}
 
 This section is not numbered.
+
+\ifplastex
+\section*{Only in HTML}\label{only-html}
+
+This section only appears in HTML.
+\fi
 
 \end{document}
     """)
@@ -64,3 +74,4 @@ This section is not numbered.
 
     assert '<a href="index.html#numbered" >numbered section</a>' in html
     assert '<a href="index.html#not-numbered" >not numbered section</a>' in html
+    assert '<a href="index.html#only-html" >HTML-only section</a>' in html
