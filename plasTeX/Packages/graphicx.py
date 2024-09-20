@@ -3,6 +3,7 @@ from plasTeX import Command
 
 from plasTeX.Packages.graphics import DeclareGraphicsExtensions as DeclareGraphicsExtensions_
 from plasTeX.Packages.graphics import graphicspath as graphicspath_
+from plasTeX.Packages.graphics import resizebox as resizebox_
 
 class includegraphics(Command):
     args = '* [ options:dict ] file:str'
@@ -100,4 +101,7 @@ class DeclareGraphicsExtensions(DeclareGraphicsExtensions_):
     packageName = 'graphicx'
 
 class graphicspath(graphicspath_):
+    packageName = 'graphicx'
+
+class resizebox(resizebox_):
     packageName = 'graphicx'
