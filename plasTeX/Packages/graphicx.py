@@ -1,9 +1,8 @@
 import os, re
 from plasTeX import Command
 
-from plasTeX.Packages.graphics import DeclareGraphicsExtensions as DeclareGraphicsExtensions_
-from plasTeX.Packages.graphics import graphicspath as graphicspath_
-from plasTeX.Packages.graphics import resizebox as resizebox_
+from plasTeX.Packages import graphics
+
 
 class includegraphics(Command):
     args = '* [ options:dict ] file:str'
@@ -97,11 +96,20 @@ class includegraphics(Command):
 
         return res
 
-class DeclareGraphicsExtensions(DeclareGraphicsExtensions_):
+class DeclareGraphicsExtensions(graphics.DeclareGraphicsExtensions):
     packageName = 'graphicx'
 
-class graphicspath(graphicspath_):
+class graphicspath(graphics.graphicspath):
     packageName = 'graphicx'
 
-class resizebox(resizebox_):
+class rotatebox(graphics.rotatebox):
+    packageName = 'graphicx'
+
+class scalebox(graphics.scalebox):
+    packageName = 'graphicx'
+
+class reflectbox(graphics.reflectbox):
+    packageName = 'graphicx'
+
+class resizebox(graphics.resizebox):
     packageName = 'graphicx'
