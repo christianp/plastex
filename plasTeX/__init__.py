@@ -152,6 +152,10 @@ class Macro(Element):
     # So we set the catcode to ensure correct behaviour.
     catcode = 0
 
+    # Macros can opt in to allowing the user to redefine them by setting
+    # ``redefinable = True``
+    redefinable = False
+
     def persist(self, attrs=None):
         """
         Store attributes needed for cross-document links

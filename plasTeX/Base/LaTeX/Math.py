@@ -248,6 +248,7 @@ class ddots(Command):
 #
 
 class MathSymbol(Command):
+    redefinable = True
     pass
 
 # Lowercase
