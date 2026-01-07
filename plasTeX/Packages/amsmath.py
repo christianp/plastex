@@ -1,6 +1,5 @@
-from plasTeX import Command
-from plasTeX.Base.LaTeX.Arrays import Array
-from plasTeX.Base.LaTeX.Math import EqnarrayStar, eqnarray
+from plasTeX import Command, Macro, NewCommand, TeXFragment
+from plasTeX.Base.LaTeX.Math import EqnarrayStar, eqnarray, MathArray
 #### Imports Added by Tim ####
 from plasTeX.Base.LaTeX.Math import math, MathEnvironmentPre
 
@@ -9,7 +8,11 @@ from plasTeX.Logging import getLogger
 
 deflog = getLogger('parse.definitions')
 
-class pmatrix(Array):
+def ProcessOptions(options, document):  # type: ignore
+    context = document.context
+    context.newcounter('parentequation')
+
+class pmatrix(MathArray):
     pass
 
 class _AMSEquation(eqnarray):
@@ -75,8 +78,54 @@ class flalign(_AMSEquation):
 class FlalignStar(_AMSEquationStar):
     macroName = 'flalign*'
 
+class tag(Command):
+    args = 'tag:str'
+
+    @property
+    def source(self):
+        return ''
+
+    def invoke(self, tex):
+        Command.invoke(self, tex)
+        node = self.ownerDocument.context.currentequation
+        self.ownerDocument.context.counters['equation'].value -= 1
+        if node:
+            node.equation_tag = self.attributes['tag']
+            node.ref = self.ownerDocument.createTextNode(node.equation_tag)
+
 class subequations(_AMSEquation):
-    pass
+    counter = 'parentequation'
+    
+    def invoke(self, tex):
+        if self.macroMode == Macro.MODE_END:
+            context = self.ownerDocument.context
+
+            equation = context.counters['equation']
+            parentequation = context.counters['parentequation']
+
+            equation.value = parentequation.value
+
+        return super().invoke(tex)
+
+    def parse(self, tex):
+        if self.macroMode == Macro.MODE_BEGIN:
+            context = self.ownerDocument.context
+
+            equation = context.counters['equation']
+            parentequation = context.counters['parentequation']
+
+            parentequation.value = equation.value
+            equation.value = 0
+
+            definition = list(Tokenizer.Tokenizer(r'\theparentequation \alph{equation}', context))
+
+            context.top['theequation'] = type(
+                'theequation', 
+                (NewCommand,),
+                {'nargs': 0, 'opt': None, 'definition': definition}
+            )
+
+        return super().parse(tex)
 
 class xalignat(alignat):
     pass
@@ -86,20 +135,20 @@ class multline(multiline):
 class MultlineStar(MultilineStar):
     macroName = 'multline*'
 
-class matrix(Array):
+class matrix(MathArray):
     pass
 
-class vmatrix(Array):
+class vmatrix(MathArray):
     pass
-class Vmatrix(Array):
-    pass
-
-class bmatrix(Array):
-    pass
-class Bmatrix(Array):
+class Vmatrix(MathArray):
     pass
 
-class smallmatrix(Array):
+class bmatrix(MathArray):
+    pass
+class Bmatrix(MathArray):
+    pass
+
+class smallmatrix(MathArray):
     pass
 
 class dddot(math):

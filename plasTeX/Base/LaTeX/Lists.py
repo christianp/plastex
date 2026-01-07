@@ -48,7 +48,7 @@ class List(Environment):
                 break
             self.digestUntil(tokens, List.item)
             if self.forcePars:
-                self.paragraphs()
+                self.paragraphs(self.paragraphsCharsubs())
 
     def invoke(self, tex):
         """ Set list nesting depth """

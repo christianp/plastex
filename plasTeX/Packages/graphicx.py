@@ -1,8 +1,9 @@
+from pathlib import Path
 import os, re
 from plasTeX import Command
 
-from plasTeX.Packages.graphics import DeclareGraphicsExtensions as DeclareGraphicsExtensions_
-from plasTeX.Packages.graphics import graphicspath as graphicspath_
+from plasTeX.Packages import graphics
+
 
 class includegraphics(Command):
     args = '* [ options:dict ] file:str'
@@ -16,23 +17,24 @@ class includegraphics(Command):
         ext = self.ownerDocument.userdata.getPath(
                       'packages/%s/extensions' % self.packageName,
                       ['.png','.jpg','.jpeg','.gif','.pdf','.ps','.eps'])
+        ext = [''] + [e.lower() for e in ext]
         paths = self.ownerDocument.userdata.getPath(
                         'packages/%s/paths' % self.packageName, ['.'])
         img = None
 
         # Check for file using graphicspath
         for p in paths:
-            for e in ['']+ext:
-                fname = os.path.join(p,f+e)
-                if os.path.isfile(fname):
-                    img = os.path.abspath(fname)
+            for fp in Path(p).glob(f+'.*'):
+                if fp.is_file() and fp.suffix.lower() in ext and fp.stem==Path(f).stem:
+                    img = str(fp.resolve())
                     break
+
             if img is not None:
                 break
 
         # Check for file using kpsewhich
         if img is None:
-            for e in ['']+ext:
+            for e in ext:
                 try:
                     img = os.path.abspath(tex.kpsewhich(f+e))
                     break
@@ -96,8 +98,20 @@ class includegraphics(Command):
 
         return res
 
-class DeclareGraphicsExtensions(DeclareGraphicsExtensions_):
+class DeclareGraphicsExtensions(graphics.DeclareGraphicsExtensions):
     packageName = 'graphicx'
 
-class graphicspath(graphicspath_):
+class graphicspath(graphics.graphicspath):
+    packageName = 'graphicx'
+
+class rotatebox(graphics.rotatebox):
+    packageName = 'graphicx'
+
+class scalebox(graphics.scalebox):
+    packageName = 'graphicx'
+
+class reflectbox(graphics.reflectbox):
+    packageName = 'graphicx'
+
+class resizebox(graphics.resizebox):
     packageName = 'graphicx'

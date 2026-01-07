@@ -183,6 +183,13 @@ class NewCommands(TestCase):
     def testRedefineUndefinedCommand(self):
         compare_output(r'\let\bar\foo\newcommand\foo{Foo}\foo')
 
+    def testRedefineVarpi(self):
+        s = TeX()
+        s.input(r'\renewcommand{\varpi}{P}\varpi')
+        res = [x for x in s]
+        print(res)
+        assert res[1] == 'P'
+
 class Python(TestCase):
 
     def testStringCommand(self):
