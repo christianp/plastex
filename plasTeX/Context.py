@@ -173,6 +173,9 @@ class Context(object):
         # Object that the current label points to
         self.currentlabel = None
 
+        # The current equation environment
+        self.currentequation = None
+
         # Labeled objects
         self.labels = {}
         self.persistentLabels = {}
@@ -1060,7 +1063,8 @@ class Context(object):
         if name in list(self.keys()):
             if not issubclass(self[name], (plasTeX.NewCommand, plasTeX.UnrecognizedMacro, plasTeX.Definition, relax)):
                 if not issubclass(self[name], plasTeX.TheCounter):
-                    return
+                    if not self[name].redefinable:
+                        return
             macrolog.debug('redefining command "%s"', name)
 
         if nargs is None:

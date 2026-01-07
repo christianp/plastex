@@ -71,4 +71,4 @@ class reflectbox(Command):
     args = 'self'
 
 class resizebox(Command):
-    args = 'hlength:dimen vlength:dimen self'
+    args = 'hlength vlength self'
