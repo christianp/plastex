@@ -5,7 +5,7 @@ C.7 Mathematical Formulas (p187)
 
 from plasTeX.Base.LaTeX.Arrays import Array
 from plasTeX import Command, Environment, sourceChildren, NoCharSubEnvironment
-from plasTeX import DimenCommand, GlueCommand, TeXFragment
+from plasTeX import DimenCommand, GlueCommand, TeXFragment, sourceArguments
 from typing import Optional
 
 #
@@ -37,6 +37,10 @@ class ThinSpace_(Command):
 class MathEnvironment(NoCharSubEnvironment):
     mathMode = True
 
+    def refstepcounter(self, tex):
+        self.ownerDocument.context.currentequation = self
+        return super().refstepcounter(tex)
+
     @property
     def mathjax_source(self):
         return mathjax_lt_gt(self.source)
@@ -47,9 +51,17 @@ class MathEnvironmentPre(MathEnvironment):
     """
     @property
     def source(self):
-        return u"\\begin{{{0}}}{1}\\end{{{0}}}".format(
+        equation_tag = self.equation_tag
+
+        if equation_tag:
+            return u"\\begin{{{0}}}{1}\\tag{{{2}}}\\end{{{0}}}".format(
                 self.tagName,
-                sourceChildren(self))
+                sourceChildren(self).strip(),
+                equation_tag)
+        else:
+            return u"\\begin{{{0}}}{1}\\end{{{0}}}".format(
+                self.tagName,
+                sourceChildren(self).strip())
 
 # Need \newcommand\({\begin{math}} and \newcommand\){\end{math}}
 
@@ -137,11 +149,19 @@ class ensuremath(Command):
             return mathjax_lt_gt(sourceChildren(self))
         return ""
 
-class equation(MathEnvironment):
+class equation(MathEnvironmentPre):
     blockType = True
     counter = 'equation'
 
-class EqnarrayStar(Array, MathEnvironmentPre, NoCharSubEnvironment):
+class NoCharSubArray:
+    def paragraphsCharsubs(self):
+        return None
+
+class MathArray(Array, NoCharSubEnvironment):
+    class ArrayCell(NoCharSubArray, Array.ArrayCell):
+        pass
+
+class EqnarrayStar(MathArray, MathEnvironmentPre, NoCharSubEnvironment):
     macroName = 'eqnarray*' # type: Optional[str]
     blockType = True
     mathMode = True
@@ -158,10 +178,27 @@ class EqnarrayStar(Array, MathEnvironmentPre, NoCharSubEnvironment):
                 obj.style['text-align'] = 'left'
             return res
 
-    class ArrayCell(Array.ArrayCell):
+    class ArrayCell(MathArray.ArrayCell):
         @property
         def source(self):
             return '$\\displaystyle %s $' % sourceChildren(self, par=False)
+
+    class ArrayRow(Array.ArrayRow):
+        @property
+        def source(self):
+            s = []
+            argSource = sourceArguments(self.parentNode)
+            if not argSource:
+                argSource = ' '
+            if self.equation_tag:
+                s.append(r"\tag{%s}" % self.equation_tag)
+            for cell in self:
+                s.append(sourceChildren(cell, par=not (self.parentNode.mathMode)))
+                if cell.endToken is not None:
+                    s.append(cell.endToken.source)
+            if self.endToken is not None:
+                s.append(self.endToken.source)
+            return ''.join(s)
 
 class eqnarray(EqnarrayStar):
     macroName = None
@@ -248,6 +285,7 @@ class ddots(Command):
 #
 
 class MathSymbol(Command):
+    redefinable = True
     pass
 
 # Lowercase

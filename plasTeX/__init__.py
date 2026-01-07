@@ -3,7 +3,7 @@ __version__ = '3.1'
 from typing import Optional, Union, List, Callable, Dict
 from plasTeX import Logging, encoding
 from plasTeX.DOM import Element, Text, Node, DocumentFragment, Document
-from plasTeX.Tokenizer import Token, BeginGroup, EndGroup, Other
+from plasTeX.Tokenizer import Token, BeginGroup, EndGroup, Other, EscapeSequence
 import string
 import re
 
@@ -151,6 +151,10 @@ class Macro(Element):
     # not true, and causes some code to crash, e.g. when \expandafter is used.
     # So we set the catcode to ensure correct behaviour.
     catcode = 0
+
+    # Macros can opt in to allowing the user to redefine them by setting
+    # ``redefinable = True``
+    redefinable = False
 
     def persist(self, attrs=None):
         """
@@ -342,6 +346,20 @@ class Macro(Element):
         else:
             delattr(self, '@id')
 
+    @property
+    def equation_tag(self):
+        tag = getattr(self, '@equation_tag', None)
+        if tag is None:
+            return self.ref.textContent if self.ref is not None else None
+        return tag
+
+    @equation_tag.setter
+    def equation_tag(self, value):
+        if value:
+            setattr(self, '@equation_tag', value)
+        else:
+            delattr(self, '@equation_tag')
+
     def expand(self, tex):
         """ Fully expand the macro """
         result = self.invoke(tex)
@@ -476,12 +494,12 @@ class Macro(Element):
         self.argSource = ''
         arg = None
         try:
-            for arg in self.arguments:
+            for i, arg in enumerate(self.arguments):
                 self.preArgument(arg, tex)
                 output, source = tex.readArgumentAndSource(parentNode=self,
                                                            name=arg.name,
                                                            **arg.options)
-                self.argSource += source
+                self.argSource += self.filterArgumentSource(source,i)
                 self.attributes[arg.name] = output
                 self.postArgument(arg, output, tex)
         except:
@@ -520,6 +538,17 @@ class Macro(Element):
         # the following arguments may contain labels.
         if arg.index == 0 and arg.name != '*modifier*':
             self.refstepcounter(tex)
+
+    def filterArgumentSource(self, source, i):
+        """
+        Apply some processing to the source of an argument.
+
+        Arguments:
+        source -- The unmodified source string of the argument.
+        i -- the index of the argument in the list of arguments.
+
+        """
+        return source
 
     def postArgument(self, arg, value, tex):
         """
@@ -723,7 +752,10 @@ class Macro(Element):
             node = node.parentNode
         return
 
-    def paragraphs(self, force=True):
+    def paragraphsCharsubs(self):
+        return self.ownerDocument.charsubs
+
+    def paragraphs(self, charsubs, force=True):
         """
         Group content into paragraphs
 
@@ -746,7 +778,7 @@ class Macro(Element):
 
         # No paragraphs, and we aren't forcing paragraphs...
         if parname is None and not force:
-            self.normalize(self.ownerDocument.charsubs)
+            self.normalize(charsubs)
             return
 
         if parname is None:
@@ -778,7 +810,7 @@ class Macro(Element):
         # Insert nodes into self
         for i, item in enumerate(newnodes):
             if item.level == Node.PAR_LEVEL:
-                item.normalize(self.ownerDocument.charsubs)
+                item.normalize(charsubs)
             self.insert(i, item)
 
         # Filter out any empty paragraphs
@@ -936,7 +968,7 @@ class Environment(Macro):
             self.appendChild(item)
 #       print 'DONE', type(self)
         if dopars:
-            self.paragraphs()
+            self.paragraphs(self.paragraphsCharsubs())
 
 class NoCharSubEnvironment(Environment):
     """
@@ -989,6 +1021,15 @@ class VerbatimEnvironment(NoCharSubEnvironment):
             if self.ownerDocument.context.currenvir is not None:
                 name = self.ownerDocument.context.currenvir
 
+        envname = None
+        if self.ownerDocument.context.currenvir is not None:
+            envname = self.ownerDocument.context.currenvir
+            # If we were invoked by a command but should be ended by an
+            # \end{...}, look for an \end{...} and check if it really contains
+            # \endverbatim
+            endpattern3 = list(r'%send%s%s%s' % (escape, bgroup, envname, egroup))
+            endlength3 = len(endpattern3)
+
         # If we were invoked by a \begin{...} look for an \end{...}
         endpattern = list(r'%send%s%s%s' % (escape, bgroup, name, egroup))
 
@@ -1027,7 +1068,19 @@ class VerbatimEnvironment(NoCharSubEnvironment):
                         res = [end]
                     tex.pushTokens(res)
                     break
-
+            if envname is not None and len(tokens) >= endlength3:
+                if tokens[-endlength3:] == endpattern3:
+                    tokens = tokens[:-endlength3]
+                    self.ownerDocument.context.pop(self)
+                    # Expand the end of the macro
+                    endenv = self.ownerDocument.createElement(envname)
+                    endenv.parentNode = self.parentNode
+                    endenv.macroMode = Environment.MODE_END
+                    res = endenv.invoke(tex)
+                    end = EscapeSequence('end%s' % name)
+                    if end in res:
+                        tex.pushTokens(res)
+                        break
         return tokens
 
 class IgnoreCommand(Command):
