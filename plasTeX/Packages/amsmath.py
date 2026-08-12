@@ -1,8 +1,9 @@
+from plasTeX.Base.LaTeX.Arrays import Array
 from plasTeX import Command, Macro, NewCommand, TeXFragment
 from plasTeX.Base.LaTeX.Arrays import Array
 from plasTeX.Base.LaTeX.Math import EqnarrayStar, eqnarray
 #### Imports Added by Tim ####
-from plasTeX.Base.LaTeX.Math import math, MathEnvironmentPre
+from plasTeX.Base.LaTeX.Math import math, MathEnvironmentPre, MathEnvironment
 
 from plasTeX import Tokenizer
 from plasTeX.Logging import getLogger
@@ -72,7 +73,18 @@ class gathered(MathEnvironmentPre):
     pass
 
 class cases(_AMSEquation):
-    pass
+    counter = None
+
+    def refstepcounter(self, tex):
+        return super(MathEnvironment, self).refstepcounter(tex)
+
+    class EndRow(Array.EndRow):
+        """ End of a row """
+        def invoke(self, tex):
+            res = Array.EndRow.invoke(self, tex)
+            res[1].ref = self.ref
+            self.ownerDocument.context.currentlabel = res[1]
+            return res
 
 class flalign(_AMSEquation):
     pass

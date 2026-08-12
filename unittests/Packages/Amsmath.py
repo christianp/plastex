@@ -173,3 +173,44 @@ def test_subequations():
     assert len(starred_equations) == 1
     assert starred_equations[0].source == r'\begin{equation*}  b \end{equation*}'
     assert starred_equations[0].ref is None
+
+DOC_cases = r"""
+\documentclass{article}
+
+\usepackage{amsmath}
+
+\begin{document}
+
+\begin{equation}
+x
+\end{equation}
+
+\begin{equation}
+A=\begin{cases} B\\C\\D
+\end{cases}
+\end{equation}
+
+\begin{equation}
+A=\begin{cases} B\\C\\D
+\end{cases}
+\tag{t}
+\end{equation}
+
+\begin{equation}
+x
+\end{equation}
+
+\end{document}
+"""
+
+def test_cases_numbering():
+    s = TeX()
+    s.input(DOC_cases)
+    output = s.parse()
+
+    equations = output.getElementsByTagName('equation')
+
+    equation_refs = ['1', '2', 't', '3']
+
+    for eq,ref in zip(equations, equation_refs):
+        assert eq.ref.textContent == ref
