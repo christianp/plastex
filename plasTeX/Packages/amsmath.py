@@ -83,7 +83,6 @@ class cases(_AMSEquation):
         def invoke(self, tex):
             res = Array.EndRow.invoke(self, tex)
             res[1].ref = self.ref
-            self.ownerDocument.context.currentlabel = res[1]
             return res
 
 class flalign(_AMSEquation):
