@@ -24,15 +24,23 @@ class _AMSEquationStar(EqnarrayStar):
     macroName = None
 
 class align(_AMSEquation):
-    pass
+    class ArrayRow(_AMSEquation.ArrayRow):
+        def digest(self, tokens):
+            self.ownerDocument.context.currentequation = self
+            return super().digest(tokens)
 
 class AlignStar(_AMSEquationStar):
     macroName = 'align*'
 
-class gather(_AMSEquation):
+    class ArrayRow(_AMSEquationStar.ArrayRow):
+        def digest(self, tokens):
+            self.ownerDocument.context.currentequation = self
+            return super().digest(tokens)
+
+class gather(align):
     pass
 
-class GatherStar(_AMSEquationStar):
+class GatherStar(AlignStar):
     macroName = 'gather*'
 
 class falign(_AMSEquation):
@@ -101,7 +109,7 @@ class tag(Command):
         Command.invoke(self, tex)
         node = self.ownerDocument.context.currentequation
         self.ownerDocument.context.counters['equation'].value -= 1
-        if node:
+        if node is not None:
             node.equation_tag = self.attributes['tag']
             node.ref = self.ownerDocument.createTextNode(node.equation_tag)
 

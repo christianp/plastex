@@ -214,3 +214,44 @@ def test_cases_numbering():
 
     for eq,ref in zip(equations, equation_refs):
         assert eq.ref.textContent == ref
+
+DOC_align = r"""
+\documentclass{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\begin{align}
+&a \tag{a} \\
+&b \tag{b} \\
+&c \tag{c}
+\end{align}
+
+\begin{align*}
+&a \tag{a} \\
+&b \tag{b} \\
+&c \tag{c}
+\end{align*}
+
+\begin{gather}
+&a \tag{a} \\
+&b \tag{b} \\
+&c \tag{c}
+\end{gather}
+
+
+\end{document}
+"""
+def test_align_tag():
+    s = TeX()
+    s.input(DOC_align)
+    output = s.parse()
+
+    for env in ('align', 'align*', 'gather'):
+        env = output.getElementsByTagName(env)[0]
+        refs = ['a','b','c']
+
+        for row,ref in zip(env, refs):
+            print(env, ref, row.source)
+            tag = '\\tag{'+ref+'}'
+            assert tag in row.source
